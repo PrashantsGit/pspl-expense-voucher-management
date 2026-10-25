@@ -14,7 +14,12 @@ A modern, secure web application designed to digitize corporate expense voucher 
 - **Security:** Spring Security 6, JWT Authentication (`io.jsonwebtoken:jjwt 0.12.6`), BCrypt password hashing
 - **Data Persistence:** Spring Data JPA / Hibernate ORM with MySQL Dialect
 - **Validation:** Jakarta Bean Validation (`spring-boot-starter-validation`)
-- **File Upload:** Multipart image upload with strict MIME verification (`PNG`, `JPEG`, `WebP`), file size cap (5MB), UUID sanitized paths, and private token-authenticated file streaming
+- **File Upload Security:** Multi-layer signature upload validation:
+  - **Content-Based Format Detection:** Magic-byte inspection for explicitly supported formats (`PNG`, `JPEG`, `WebP`), rejecting unsupported formats (`GIF`, `BMP`, `SVG`, `PDF`).
+  - **MIME & Extension Alignment:** Validates client `Content-Type` and original filename extensions against the detected binary format; stores files under server-controlled UUIDs with canonical extensions.
+  - **Limits & Constraints:** Enforces 5MB maximum file size, 24-byte minimum size, and canvas dimensions up to 5000 × 5000 pixels.
+  - **Deep Image Verification:** Performs full raster decoding for PNG and JPEG using `ImageReader` to ensure data integrity; performs structural and header validation (RIFF container, chunk headers, and canvas dimensions) for WebP (note: complete bitstream raster decoding is not performed for WebP due to lack of a native OpenJDK decoder).
+  - **Safe Storage & Delivery:** In-memory validation prevents partial file residue on failure; private disk storage outside web root; served with deterministic `Content-Type`, `X-Content-Type-Options: nosniff`, and role-based token authentication.
 
 ### Frontend
 - **Framework:** React 19 with Vite 8 (JavaScript ES6+)
@@ -251,6 +256,6 @@ Before deploying this application to a production environment:
 ## 9. Assumptions Made During Development
 
 1. **Voucher Numbering Format:** Generated in the format `VCH-YYYYMM-0001` based on the current year, month, and database record identifier.
-2. **Signature Storage:** Signatures are stored securely on local disk outside of the web root (`uploads/signatures`) using randomized UUID filenames. They are only streamable via authenticated API calls verifying user permissions.
+2. **Signature Storage & Security:** Signatures are stored securely on local disk outside the web root (`uploads/signatures`) using randomized UUID filenames with canonical extensions. Uploads undergo pre-write binary format validation, dimension checks, and full raster decoding for PNG/JPEG, plus structural RIFF/chunk validation for WebP. Signatures are streamable only via authenticated, role-authorized API endpoints with `X-Content-Type-Options: nosniff`.
 3. **Database Seeding:** On fresh system startup, if no users exist, the system creates four default accounts and four initial vouchers across all lifecycle states to facilitate immediate review.
 4. **Vite Development Proxy:** Vite's development server is pre-configured to forward `/api` requests to `http://localhost:8080`, allowing seamless local execution without CORS friction while maintaining CORS filters for security.

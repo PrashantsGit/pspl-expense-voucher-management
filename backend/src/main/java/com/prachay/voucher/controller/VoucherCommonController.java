@@ -18,9 +18,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/api/vouchers")
@@ -43,7 +40,7 @@ public class VoucherCommonController {
     }
 
     @GetMapping("/{id}/signatures/employee")
-    public ResponseEntity<Resource> getEmployeeSignature(@PathVariable Long id) throws IOException {
+    public ResponseEntity<Resource> getEmployeeSignature(@PathVariable Long id) {
         User currentUser = userService.getCurrentUser();
         Voucher voucher = voucherService.getVoucherEntity(id);
 
@@ -57,19 +54,18 @@ public class VoucherCommonController {
         }
 
         Resource resource = signatureStorageService.loadAsResource(voucher.getEmployeeSignaturePath());
-        String contentType = Files.probeContentType(Paths.get(resource.getFile().getAbsolutePath()));
-        if (contentType == null) {
-            contentType = MediaType.IMAGE_PNG_VALUE;
-        }
+        MediaType mediaType = signatureStorageService.getMediaTypeForFilename(resource.getFilename());
 
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
+                .contentType(mediaType)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .header("X-Content-Type-Options", "nosniff")
+                .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600")
                 .body(resource);
     }
 
     @GetMapping("/{id}/signatures/director")
-    public ResponseEntity<Resource> getDirectorSignature(@PathVariable Long id) throws IOException {
+    public ResponseEntity<Resource> getDirectorSignature(@PathVariable Long id) {
         User currentUser = userService.getCurrentUser();
         Voucher voucher = voucherService.getVoucherEntity(id);
 
@@ -82,14 +78,13 @@ public class VoucherCommonController {
         }
 
         Resource resource = signatureStorageService.loadAsResource(voucher.getDirectorSignaturePath());
-        String contentType = Files.probeContentType(Paths.get(resource.getFile().getAbsolutePath()));
-        if (contentType == null) {
-            contentType = MediaType.IMAGE_PNG_VALUE;
-        }
+        MediaType mediaType = signatureStorageService.getMediaTypeForFilename(resource.getFilename());
 
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
+                .contentType(mediaType)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .header("X-Content-Type-Options", "nosniff")
+                .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600")
                 .body(resource);
     }
 }

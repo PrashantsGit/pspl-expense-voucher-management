@@ -23,11 +23,30 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class VoucherService {
+
+    public static final Map<String, String> ALLOWED_SORT_PROPERTIES = Map.ofEntries(
+            Map.entry("createddate", "createdDate"),
+            Map.entry("lastupdateddate", "lastUpdatedDate"),
+            Map.entry("expensedate", "expenseDate"),
+            Map.entry("voucherdate", "voucherDate"),
+            Map.entry("amount", "amount"),
+            Map.entry("vouchernumber", "voucherNumber"),
+            Map.entry("departmentname", "departmentName"),
+            Map.entry("expensetitle", "expenseTitle"),
+            Map.entry("expensecategory", "expenseCategory"),
+            Map.entry("status", "status"),
+            Map.entry("employeename", "employeeName"),
+            Map.entry("approvaldate", "approvalDate"),
+            Map.entry("id", "id")
+    );
 
     private final VoucherRepository voucherRepository;
     private final SignatureStorageService signatureStorageService;
@@ -37,17 +56,15 @@ public class VoucherService {
         this.signatureStorageService = signatureStorageService;
     }
 
-    private synchronized String generateNextVoucherNumber() {
-        String yearMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
-        long nextId = voucherRepository.findTopByOrderByIdDesc()
-                .map(v -> v.getId() + 1)
-                .orElse(1L);
-        return String.format("VCH-%s-%04d", yearMonth, nextId);
+    public String formatVoucherNumber(long id, LocalDate date) {
+        String yearMonth = (date != null ? date : LocalDate.now()).format(DateTimeFormatter.ofPattern("yyyyMM"));
+        return String.format("VCH-%s-%04d", yearMonth, id);
     }
 
     public VoucherResponse createDraft(User employee, VoucherCreateRequest request, MultipartFile signatureFile) {
         Voucher voucher = new Voucher();
-        voucher.setVoucherNumber(generateNextVoucherNumber());
+        // Generate a collision-free temporary token for the initial insert
+        voucher.setVoucherNumber("VCH-TMP-" + UUID.randomUUID().toString().replace("-", "").substring(0, 20));
         voucher.setVoucherDate(LocalDate.now());
         voucher.setExpenseDate(request.getExpenseDate());
         voucher.setDepartmentName(request.getDepartmentName().trim());
@@ -63,13 +80,29 @@ public class VoucherService {
                 ? request.getEmployeeCustomId().trim()
                 : employee.getEmployeeId());
 
+        String storedSignature = null;
         if (signatureFile != null && !signatureFile.isEmpty()) {
-            String storedName = signatureStorageService.store(signatureFile, "emp_" + employee.getId());
-            voucher.setEmployeeSignaturePath(storedName);
+            storedSignature = signatureStorageService.store(signatureFile, "emp_" + employee.getId());
+            voucher.setEmployeeSignaturePath(storedSignature);
         }
 
-        Voucher saved = voucherRepository.save(voucher);
-        return VoucherResponse.fromEntity(saved);
+        try {
+            // Step 1: Save & flush to let MySQL allocate a guaranteed unique, atomic AUTO_INCREMENT ID
+            Voucher saved = voucherRepository.saveAndFlush(voucher);
+
+            // Step 2: Format the canonical voucher number using the atomically allocated ID
+            String finalVoucherNumber = formatVoucherNumber(saved.getId(), saved.getVoucherDate());
+            saved.setVoucherNumber(finalVoucherNumber);
+
+            // Step 3: Persist and flush the final canonical voucher number
+            saved = voucherRepository.saveAndFlush(saved);
+            return VoucherResponse.fromEntity(saved);
+        } catch (Exception e) {
+            if (storedSignature != null) {
+                signatureStorageService.deleteIfExists(storedSignature);
+            }
+            throw e;
+        }
     }
 
     public VoucherResponse updateDraft(User employee, Long id, VoucherUpdateRequest request) {
@@ -130,17 +163,17 @@ public class VoucherService {
             throw new BadRequestException("Signature file is required");
         }
 
-        // Delete old signature if exists and not referenced elsewhere
-        if (voucher.getEmployeeSignaturePath() != null) {
-            String path = voucher.getEmployeeSignaturePath();
-            long count = voucherRepository.countByEmployeeSignaturePath(path);
-            if (count <= 1) {
-                signatureStorageService.deleteIfExists(path);
-            }
-        }
-
+        String oldPath = voucher.getEmployeeSignaturePath();
         String storedName = signatureStorageService.store(signatureFile, "emp_" + employee.getId());
         voucher.setEmployeeSignaturePath(storedName);
+
+        // Delete previous signature file only after successful store and if not shared
+        if (oldPath != null && !oldPath.equals(storedName)) {
+            long count = voucherRepository.countByEmployeeSignaturePath(oldPath);
+            if (count <= 1) {
+                signatureStorageService.deleteIfExists(oldPath);
+            }
+        }
 
         Voucher saved = voucherRepository.save(voucher);
         return VoucherResponse.fromEntity(saved);
@@ -233,7 +266,7 @@ public class VoucherService {
     @Transactional(readOnly = true)
     public List<VoucherResponse> getVouchersForEmployee(User employee, VoucherFilterRequest filter) {
         Specification<Voucher> spec = VoucherSpecification.withFilter(filter, employee);
-        Sort sort = buildSort(filter);
+        Sort sort = validateAndBuildSort(filter);
         return voucherRepository.findAll(spec, sort)
                 .stream()
                 .map(VoucherResponse::fromEntity)
@@ -243,7 +276,7 @@ public class VoucherService {
     @Transactional(readOnly = true)
     public List<VoucherResponse> getAllVouchers(VoucherFilterRequest filter) {
         Specification<Voucher> spec = VoucherSpecification.withFilter(filter, null);
-        Sort sort = buildSort(filter);
+        Sort sort = validateAndBuildSort(filter);
         return voucherRepository.findAll(spec, sort)
                 .stream()
                 .map(VoucherResponse::fromEntity)
@@ -268,18 +301,35 @@ public class VoucherService {
         }
     }
 
-    private Sort buildSort(VoucherFilterRequest filter) {
-        String sortBy = "createdDate";
-        Sort.Direction direction = Sort.Direction.DESC;
+    public Sort validateAndBuildSort(VoucherFilterRequest filter) {
+        if (filter == null) {
+            return Sort.by(Sort.Direction.DESC, "createdDate");
+        }
 
-        if (filter != null) {
-            if (filter.getSortBy() != null && !filter.getSortBy().isBlank()) {
-                sortBy = filter.getSortBy();
+        String targetProperty = "createdDate";
+        if (filter.getSortBy() != null && !filter.getSortBy().isBlank()) {
+            String rawSortBy = filter.getSortBy().trim();
+            String matchedProperty = ALLOWED_SORT_PROPERTIES.get(rawSortBy.toLowerCase(Locale.ROOT));
+            if (matchedProperty == null) {
+                throw new BadRequestException("Invalid sort field: '" + rawSortBy + "'. Supported sort fields are: "
+                        + String.join(", ", ALLOWED_SORT_PROPERTIES.values().stream().distinct().sorted().toList()));
             }
-            if ("ASC".equalsIgnoreCase(filter.getSortDirection())) {
+            targetProperty = matchedProperty;
+        }
+
+        Sort.Direction direction = Sort.Direction.DESC;
+        if (filter.getSortDirection() != null && !filter.getSortDirection().isBlank()) {
+            String rawDir = filter.getSortDirection().trim().toUpperCase(Locale.ROOT);
+            if ("ASC".equals(rawDir)) {
                 direction = Sort.Direction.ASC;
+            } else if ("DESC".equals(rawDir)) {
+                direction = Sort.Direction.DESC;
+            } else {
+                throw new BadRequestException("Invalid sort direction: '" + filter.getSortDirection().trim()
+                        + "'. Supported directions are: ASC, DESC");
             }
         }
-        return Sort.by(direction, sortBy);
+
+        return Sort.by(direction, targetProperty);
     }
 }
