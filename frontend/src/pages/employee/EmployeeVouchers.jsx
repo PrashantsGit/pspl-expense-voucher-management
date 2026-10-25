@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { employeeApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import VoucherFilterBar from '../../components/VoucherFilterBar';
@@ -17,16 +17,14 @@ const EmployeeVouchers = () => {
   const [signatureFile, setSignatureFile] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const navigate = useNavigate();
-
   const fetchVouchers = async (params = {}) => {
     try {
       setLoading(true);
       setError('');
       const res = await employeeApi.getMyVouchers(params);
-      setVouchers(res.data);
+      setVouchers(res.data || []);
     } catch (err) {
-      setError('Failed to fetch your vouchers.');
+      setError(err.response?.data?.message || 'Failed to fetch your vouchers.');
     } finally {
       setLoading(false);
     }
@@ -98,14 +96,18 @@ const EmployeeVouchers = () => {
 
   return (
     <div className="container py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-2 border-bottom">
         <div>
-          <h2 className="fw-bold mb-1">My Expense Vouchers</h2>
-          <p className="text-muted mb-0 small">
-            View, track, and manage all your submitted and draft vouchers
+          <div className="text-primary small fw-semibold text-uppercase tracking-wider mb-1 d-flex align-items-center gap-1.5">
+            <i className="bi bi-wallet2"></i>
+            <span>Employee Portal • My Expense Claims</span>
+          </div>
+          <h2 className="fw-bold text-dark mb-1">My Expense Vouchers</h2>
+          <p className="text-muted small mb-0">
+            View, track, and manage all your submitted reimbursement claims and draft vouchers.
           </p>
         </div>
-        <Link to="/employee/vouchers/new" className="btn btn-primary d-flex align-items-center gap-2">
+        <Link to="/employee/vouchers/new" className="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 btn-sm fw-semibold shadow-sm">
           <i className="bi bi-plus-lg"></i>
           <span>Create Voucher</span>
         </Link>
@@ -251,15 +253,11 @@ const EmployeeVouchers = () => {
 
       {/* Confirmation Modal */}
       {actionVoucher && (
-        <div
-          className="modal fade show d-block"
-          tabIndex="-1"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow">
-              <div className="modal-header">
-                <h5 className="modal-title fw-bold">
+        <div className="pspl-modal-backdrop" tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '480px', width: '100%' }}>
+            <div className="modal-content border-0 shadow-lg rounded-3">
+              <div className="modal-header border-bottom py-3 px-4 bg-white">
+                <h5 className="modal-title fw-bold text-dark mb-0">
                   {actionType === 'DELETE' && 'Confirm Delete Draft'}
                   {actionType === 'SUBMIT' && 'Submit Voucher for Approval'}
                   {actionType === 'UPLOAD_SIG' && 'Upload Signature & Submit'}

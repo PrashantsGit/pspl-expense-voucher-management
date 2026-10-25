@@ -4,30 +4,34 @@ const StatusBadge = ({ status }) => {
   switch (status) {
     case 'DRAFT':
       return (
-        <span className="badge bg-secondary text-white px-2 py-1">
-          <i className="bi bi-pencil-square me-1"></i> Draft
+        <span className="status-pill status-pill-draft">
+          <i className="bi bi-pencil-square"></i>
+          <span>Draft</span>
         </span>
       );
     case 'PENDING_APPROVAL':
       return (
-        <span className="badge bg-warning text-dark px-2 py-1">
-          <i className="bi bi-clock-history me-1"></i> Pending Approval
+        <span className="status-pill status-pill-pending">
+          <i className="bi bi-clock-history"></i>
+          <span>Pending Approval</span>
         </span>
       );
     case 'APPROVED':
       return (
-        <span className="badge bg-success text-white px-2 py-1">
-          <i className="bi bi-check-circle-fill me-1"></i> Approved
+        <span className="status-pill status-pill-approved">
+          <i className="bi bi-check-circle-fill"></i>
+          <span>Approved</span>
         </span>
       );
     case 'REJECTED':
       return (
-        <span className="badge bg-danger text-white px-2 py-1">
-          <i className="bi bi-x-circle-fill me-1"></i> Rejected
+        <span className="status-pill status-pill-rejected">
+          <i className="bi bi-x-circle-fill"></i>
+          <span>Rejected</span>
         </span>
       );
     default:
-      return <span className="badge bg-light text-dark">{status}</span>;
+      return <span className="status-pill status-pill-draft">{status}</span>;
   }
 };
 

@@ -68,7 +68,7 @@ const VoucherFilterBar = ({ onFilter, onReset, showEmployeeFilter = true }) => {
   };
 
   return (
-    <div className="card shadow-sm mb-4 border-0">
+    <div className="card shadow-sm mb-4 border-0 d-print-none">
       <div className="card-body p-3">
         <form onSubmit={handleApply}>
           <div className="row g-2 align-items-center">

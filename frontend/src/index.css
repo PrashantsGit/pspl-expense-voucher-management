@@ -1,31 +1,726 @@
-/* Clean corporate styles for Expense Voucher Management System */
-body {
+/* ==========================================================================
+   PSPL Expense Voucher Management System - Modern SaaS Design System
+   ========================================================================== */
+
+:root {
+  /* Brand Identity - Deep Navy & Royal Cobalt */
+  --pspl-brand-primary: #0f172a;       /* Slate-900 (Sidebar & High Authority) */
+  --pspl-brand-accent: #2563eb;        /* Cobalt Blue (Active Actions & Primary Buttons) */
+  --pspl-brand-accent-hover: #1d4ed8;  /* Cobalt-700 */
+  --pspl-brand-light: #eff6ff;         /* Blue-50 (Subtle highlight surfaces) */
+  --pspl-brand-glow: rgba(37, 99, 235, 0.2);
+
+  /* Surface & Background */
+  --pspl-bg-app: #f8fafc;              /* Slate-50 main canvas */
+  --pspl-bg-surface: #ffffff;          /* Pure white card surface */
+  --pspl-bg-sidebar: #0f172a;          /* Slate-900 enterprise sidebar */
+  --pspl-bg-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --pspl-bg-sidebar-active: #2563eb;   /* Cobalt active item */
+
+  /* Neutral Borders & Dividers */
+  --pspl-border-subtle: #e2e8f0;       /* Slate-200 */
+  --pspl-border-strong: #cbd5e1;       /* Slate-300 */
+  --pspl-border-sidebar: rgba(255, 255, 255, 0.08);
+
+  /* Typography Colors */
+  --pspl-text-primary: #0f172a;        /* High-contrast Slate-900 */
+  --pspl-text-secondary: #475569;      /* Slate-600 */
+  --pspl-text-muted: #94a3b8;          /* Slate-400 */
+  --pspl-text-sidebar: #94a3b8;        /* Sidebar inactive links */
+  --pspl-text-sidebar-active: #ffffff; /* Sidebar active links */
+
+  /* Semantic Status Colors (Soft Pills) */
+  --pspl-status-draft-bg: #f1f5f9;
+  --pspl-status-draft-text: #475569;
+  --pspl-status-draft-border: #cbd5e1;
+
+  --pspl-status-pending-bg: #fffbeb;
+  --pspl-status-pending-text: #b45309;
+  --pspl-status-pending-border: #fde68a;
+
+  --pspl-status-approved-bg: #ecfdf5;
+  --pspl-status-approved-text: #047857;
+  --pspl-status-approved-border: #a7f3d0;
+
+  --pspl-status-rejected-bg: #fff1f2;
+  --pspl-status-rejected-text: #be123c;
+  --pspl-status-rejected-border: #fecdd3;
+
+  /* Elevation & Shadows */
+  --pspl-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --pspl-shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 4px 6px -1px rgba(15, 23, 42, 0.04);
+  --pspl-shadow-hover: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.04);
+  --pspl-shadow-sidebar: 4px 0 24px 0 rgba(15, 23, 42, 0.12);
+
+  /* Radius */
+  --pspl-radius-sm: 6px;
+  --pspl-radius-md: 10px;
+  --pspl-radius-lg: 14px;
+  --pspl-radius-pill: 9999px;
+
+  /* Dimensions */
+  --pspl-sidebar-width: 256px;
+  --pspl-sidebar-collapsed-width: 76px;
+  --pspl-topbar-height: 64px;
+}
+
+/* ==========================================================================
+   Base Layout & Typography
+   ========================================================================== */
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--pspl-bg-app);
+  color: var(--pspl-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background-color: #f4f6f9;
-  color: #333333;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Application Shell Layout
+   ========================================================================== */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  width: 100%;
+  position: relative;
+  background-color: var(--pspl-bg-app);
+}
+
+.app-main-wrapper {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--pspl-bg-app);
+  transition: margin-left 0.2s cubic-bezier(0.4, 0, 0.2, 1), width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Authenticated Desktop Layout Offsets */
+@media (min-width: 992px) {
+  .has-sidebar .app-main-wrapper {
+    margin-left: var(--pspl-sidebar-width);
+    width: calc(100% - var(--pspl-sidebar-width));
+  }
+
+  .has-sidebar.sidebar-collapsed .app-main-wrapper {
+    margin-left: var(--pspl-sidebar-collapsed-width);
+    width: calc(100% - var(--pspl-sidebar-collapsed-width));
+  }
+}
+
+/* Mobile Offsets (< 992px) */
+@media (max-width: 991.98px) {
+  .has-sidebar .app-main-wrapper {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* Unauthenticated / Login View: Full viewport, zero sidebar offset */
+.auth-view .app-main-wrapper {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
+/* ==========================================================================
+   Sidebar Navigation
+   ========================================================================== */
+.app-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--pspl-sidebar-width);
+  background-color: var(--pspl-bg-sidebar);
+  border-right: 1px solid var(--pspl-border-sidebar);
+  display: flex;
+  flex-direction: column;
+  z-index: 1030;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Sidebar Brand Header */
+.sidebar-brand-header {
+  height: var(--pspl-topbar-height);
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--pspl-border-sidebar);
+  gap: 0.75rem;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.sidebar-brand-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+}
+
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sidebar-brand-title {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.sidebar-brand-subtitle {
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Sidebar Navigation Items */
+.sidebar-nav-container {
+  padding: 1.25rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1 1 auto;
+}
+
+.sidebar-heading {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  padding: 0.75rem 0.75rem 0.35rem;
+  white-space: nowrap;
+}
+
+.sidebar-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--pspl-radius-sm);
+  color: var(--pspl-text-sidebar);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.15s ease-in-out;
+}
+
+.sidebar-nav-link:hover {
+  color: #ffffff;
+  background-color: var(--pspl-bg-sidebar-hover);
+}
+
+.sidebar-nav-link.active {
+  color: #ffffff;
+  background-color: var(--pspl-brand-accent);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  font-weight: 600;
+}
+
+.sidebar-nav-icon {
+  font-size: 1.15rem;
+  min-width: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sidebar Profile Block in Footer */
+.sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid var(--pspl-border-sidebar);
+  background-color: rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.sidebar-user-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.sidebar-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #1e293b;
+  color: #93c5fd;
+  border: 1px solid rgba(147, 197, 253, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sidebar-user-name {
+  color: #f1f5f9;
+  font-size: 0.825rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.sidebar-user-role {
+  color: #94a3b8;
+  font-size: 0.7rem;
+}
+
+/* Collapsed Desktop Sidebar */
+@media (min-width: 992px) {
+  .sidebar-collapsed .app-sidebar {
+    width: var(--pspl-sidebar-collapsed-width);
+  }
+
+  .sidebar-collapsed .sidebar-brand-text,
+  .sidebar-collapsed .sidebar-heading,
+  .sidebar-collapsed .sidebar-nav-label,
+  .sidebar-collapsed .sidebar-user-info {
+    display: none !important;
+  }
+
+  .sidebar-collapsed .sidebar-brand-header {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .sidebar-collapsed .sidebar-nav-link {
+    justify-content: center;
+    padding: 0.65rem 0;
+  }
+
+  .sidebar-collapsed .sidebar-user-card {
+    justify-content: center;
+  }
+}
+
+/* Mobile Sidebar Drawer (< 992px) */
+@media (max-width: 991.98px) {
+  .app-sidebar {
+    transform: translateX(-100%);
+    width: 270px;
+    box-shadow: var(--pspl-shadow-sidebar);
+  }
+
+  .app-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .app-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 1025;
+    animation: psplFadeIn 0.2s ease-in-out;
+  }
+}
+
+@keyframes psplFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==========================================================================
+   Top Header Bar
+   ========================================================================== */
+.app-topbar {
+  height: var(--pspl-topbar-height);
+  background-color: var(--pspl-bg-surface);
+  border-bottom: 1px solid var(--pspl-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.topbar-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--pspl-border-subtle);
+  color: var(--pspl-text-secondary);
+  border-radius: var(--pspl-radius-sm);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.topbar-toggle-btn:hover {
+  background-color: var(--pspl-bg-app);
+  color: var(--pspl-text-primary);
+  border-color: var(--pspl-border-strong);
+}
+
+.topbar-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--pspl-text-secondary);
+}
+
+.topbar-breadcrumb-title {
+  font-weight: 600;
+  color: var(--pspl-text-primary);
+}
+
+.topbar-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: var(--pspl-radius-pill);
+  font-size: 0.725rem;
+  font-weight: 600;
+  color: #047857;
+}
+
+.topbar-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+}
+
+/* ==========================================================================
+   Page Content Area & Login Centering
+   ========================================================================== */
+.app-page-body {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Dashboard & page container: full usable width with consistent 1.5rem padding */
+.app-page-body .container,
+.app-page-body .container-fluid {
+  max-width: 1600px;
+  width: 100%;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+/* Centered Authentication Layout */
+.auth-page-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 64px);
+  padding: 1.5rem 1rem;
+  width: 100%;
+}
+
+.login-card-wrapper {
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+}
+
+.login-card-wrapper .card {
+  border-radius: var(--pspl-radius-md) !important;
+  border: 1px solid var(--pspl-border-subtle) !important;
+  box-shadow: var(--pspl-shadow-card) !important;
+  background-color: var(--pspl-bg-surface);
+}
+
+.login-card-wrapper .card-body {
+  padding: 2rem !important;
+}
+
+@media (max-width: 575.98px) {
+  .login-card-wrapper .card-body {
+    padding: 1.5rem !important;
+  }
+}
+
+/* ==========================================================================
+   Soft-Pill Status Badges
+   ========================================================================== */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--pspl-radius-pill);
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.status-pill-draft {
+  background-color: var(--pspl-status-draft-bg);
+  color: var(--pspl-status-draft-text);
+  border: 1px solid var(--pspl-status-draft-border);
+}
+
+.status-pill-pending {
+  background-color: var(--pspl-status-pending-bg);
+  color: var(--pspl-status-pending-text);
+  border: 1px solid var(--pspl-status-pending-border);
+}
+
+.status-pill-approved {
+  background-color: var(--pspl-status-approved-bg);
+  color: var(--pspl-status-approved-text);
+  border: 1px solid var(--pspl-status-approved-border);
+}
+
+.status-pill-rejected {
+  background-color: var(--pspl-status-rejected-bg);
+  color: var(--pspl-status-rejected-text);
+  border: 1px solid var(--pspl-status-rejected-border);
+}
+
+/* ==========================================================================
+   Card, Table & Layout UI Polish
+   ========================================================================== */
+.card {
+  border-radius: var(--pspl-radius-md) !important;
+  border: 1px solid var(--pspl-border-subtle) !important;
+  box-shadow: var(--pspl-shadow-card) !important;
+  background-color: var(--pspl-bg-surface);
+}
+
+.table {
+  --bs-table-bg: transparent;
+  font-size: 0.875rem;
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.table thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pspl-text-secondary);
+  background-color: #f8fafc;
+  border-bottom: 1px solid var(--pspl-border-subtle);
+  padding: 0.75rem 1rem;
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--pspl-border-subtle);
+  vertical-align: middle;
+}
+
+/* Anti-wrapping for voucher identifiers, dates, and amounts */
+.table td:first-child,
+.table td a[href*="/vouchers/"],
+.table td:nth-child(2),
+.table td:nth-child(6),
+.table td:has(.status-pill) {
+  white-space: nowrap;
+}
+
+.table td:nth-child(6) {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.table td .text-truncate {
+  max-width: 240px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table-hover tbody tr:hover {
-  background-color: rgba(13, 110, 253, 0.04);
+  background-color: rgba(37, 99, 235, 0.03) !important;
 }
 
-.badge {
-  font-weight: 500;
-  letter-spacing: 0.2px;
+.app-footer {
+  background-color: var(--pspl-bg-surface);
+  border-top: 1px solid var(--pspl-border-subtle);
+  padding: 1rem 1.5rem;
+  width: 100%;
+  flex-shrink: 0;
 }
 
-/* Print styling for Section 3.3 bonus requirement */
+/* ==========================================================================
+   Dashboard Metric Boxes & Visual Indicators
+   ========================================================================== */
+.metric-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--pspl-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.bg-primary-subtle-box {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.bg-success-subtle-box {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.bg-warning-subtle-box {
+  background-color: #fffbeb;
+  color: #d97706;
+}
+
+.bg-danger-subtle-box {
+  background-color: #fff1f2;
+  color: #e11d48;
+}
+
+.bg-slate-subtle-box {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Modals, Dropzones & User Avatars
+   ========================================================================== */
+.avatar-circle-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  flex-shrink: 0;
+}
+
+.pspl-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(3px);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.upload-dropzone {
+  border: 2px dashed var(--pspl-border-strong);
+  border-radius: var(--pspl-radius-md);
+  padding: 1.25rem 1rem;
+  text-align: center;
+  background-color: var(--pspl-bg-app);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.upload-dropzone:hover {
+  border-color: var(--pspl-brand-accent);
+  background-color: #eff6ff;
+}
+
+/* ==========================================================================
+   Print Styling
+   ========================================================================== */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm;
+  }
   body {
     background-color: #ffffff !important;
+    color: #0f172a !important;
   }
-  .d-print-none {
+  .app-sidebar,
+  .app-topbar,
+  .app-sidebar-backdrop,
+  .app-footer,
+  .d-print-none,
+  .pspl-modal-backdrop,
+  .modal {
     display: none !important;
+  }
+  .app-main-wrapper {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
   }
   #printable-voucher {
     box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 1.5rem !important;
     margin: 0 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }
